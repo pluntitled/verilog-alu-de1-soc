@@ -1,0 +1,13 @@
+timescale 1ns/1ps
+module test;
+
+reg [7:0] a, b;
+reg c;
+wire [7:0] y;
+
+lab2 dut(
+	.x1(x1),
+	.x2(x2),
+	.c(c),
+	.y(y)
+);

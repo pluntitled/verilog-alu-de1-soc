@@ -1,0 +1,12 @@
+module bin2bcd #(
+	parameter WIDTH = 6
+)
+
+(
+	input wire [WIDTH-1:0] bin;
+	output wire [7:0] bcd;
+);
+
+	assign bcd[7:4] = bin / 10;
+	assign bcd[3:0] = bin % 10;
+endmodule 

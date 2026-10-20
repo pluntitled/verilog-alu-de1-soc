@@ -1,0 +1,24 @@
+module truetop #(
+	parameter DATA_WIDTH = 4,
+	parameter RESULT_WIDTH = 6,
+	parameter ALT_WIDTH = 4,
+	parameter ALT_EN = 1,
+	parameter OVERFLOW_EN = 1
+)
+
+(
+	input wire [9:0] sw,
+	input wire [3:0] key,
+	output wire [6:0] hex0, hex1, hex2, hex3, hex4, hex5,
+	output wire ledr0
+);
+
+	wire [5:0] s;
+	
+	wire [7:0] a_bcd;
+	wire [7:0] b_bcd;
+	wire [7:0] c_bcd;
+	
+	lab2 #(
+		parameter DATA
+	)

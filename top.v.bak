@@ -1,0 +1,8 @@
+module top (
+	input [DATA_WIDTH-1:0] a,
+	input [DATA_WIDTH-1:0] b,
+	input [1:0] op,
+	input [DATA_WIDTH-1:0]alt,
+	output reg [RESULT_WIDTH-1:0] s,
+	output reg [RESULT_WIDTH-1:0] overflow
+);
