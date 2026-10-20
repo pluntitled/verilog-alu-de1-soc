@@ -1,0 +1,29 @@
+# Quartus generated directories
+db/
+incremental_db/
+output_files/
+
+# Quartus local settings
+*.qws
+
+# ModelSim generated files
+work/
+transcript
+*.wlf
+
+# Simulation waveforms
+*.vcd
+*.vvp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Additional simulation-generated files
+rtl_work/
+msim_transcript
+modelsim.ini
+*.bak
+*.bak[0-9]*
+*.sft
+*_modelsim.xrf
