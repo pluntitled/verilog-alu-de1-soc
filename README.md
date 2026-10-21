@@ -179,8 +179,8 @@ Supporting materials may include:
 - Top-level RTL diagram
 - Simulation waveforms
 - FPGA resource comparison
-- Hardware test results
-- A photo or short video of the running design
+- Hardware test results (in the process)
+- A photo or short video of the running design (in the process)
 
 ## What I Learned
 
