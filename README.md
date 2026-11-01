@@ -1,194 +1,188 @@
 # Parameterized Verilog ALU for DE1-SoC
 
-A parameterized combinational arithmetic logic unit (ALU)
-implemented in Verilog for the Terasic DE1-SoC FPGA board.
+A parameterized combinational arithmetic logic unit (ALU) implemented in Verilog for the Terasic DE1-SoC FPGA board. Switches select the operands and operation, push-buttons select the operation set, six seven-segment displays show decimal values, and one LED indicates arithmetic errors.
 
-The project includes operation selection, optional alternative
-operations, overflow and calculation error indication, and
-decimal output on six seven-segment displays.
+Developed as part of a digital design laboratory course. This project documents my progress in FPGA development and technical English.
 
-Developed as part of a digital design laboratory course.
-This repository also documents my progress in FPGA development
-and technical English.
+## Hardware and Tools
 
-## Target Hardware
+- **Board:** Terasic DE1-SoC
+- **FPGA:** Intel/Altera Cyclone V SoC, `5CSEMA5F31C6`
+- **FPGA tools:** Quartus Prime Lite Edition 18.1
+- **Simulation:** ModelSim Intel FPGA Edition; additional RTL checks with Icarus Verilog 12.0
+- **Language:** Verilog
 
-- Board: Terasic DE1-SoC
-- FPGA: Intel/Altera Cyclone V SoC, 5CSEMA5F31C6
-- Design software: Quartus II / Quartus Prime
-- Simulation software: ModelSim
+The ALU and display converters are combinational: they do not require a clock or reset.
 
 ## Features
 
-- Combinational ALU with unsigned input operands
-- Four operation codes selected by a two-bit input
-- Main and alternative operation sets
-- Alternative operation selection using a reduction operator
-- Configurable operand, result, and alternative-input widths
-- Optional overflow and calculation error indication
+- Configurable operand, result, and alternative-selection widths
+- Four main operations and four alternative operations
+- Optional alternative-operation logic and arithmetic error indication
 - Binary-to-BCD conversion using Double Dabble
-- BCD-to-seven-segment decoding
-- Simulation testbench with random operands
-- Board-level integration with switches, buttons, displays, and an LED
+- Decimal display of both operands and the result
+- Random stimulus testbench for waveform inspection
 
-The ALU does not require a clock signal.
+## ALU Operations
 
-## ALU Interface
+Operands `a` and `b` are unsigned. Alternative operations are selected when `ALT_EN` is enabled and **every bit of `alt` is 1**, using the reduction AND expression `&alt`.
 
-| Port | Direction | Description |
-|------|-----------|-------------|
-| a | Input | First unsigned operand |
-| b | Input | Second unsigned operand |
-| op | Input | Two-bit operation code |
-| alt | Input | Alternative operation selection inputs |
-| s | Output | Operation result |
-| overflow | Output | Overflow or calculation error flag |
+| `op` | Main operation | Alternative operation |
+|------|----------------|-----------------------|
+| `00` | `a % b` | `(2 * a) % b` |
+| `01` | `a * b` | `a * b - 3` |
+| `10` | `a ^ b` | `a ^ ~b` |
+| `11` | `~(a & b)` | `~(~a & b)` |
 
-The operation set and the alternative-selection condition
-follow the assigned laboratory variant.
+`%` computes the remainder. `^`, `&`, and `~` are bitwise operators. The result is stored in the `RESULT_WIDTH`-bit output `s`.
 
 ## Parameters
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| DATA_WIDTH | Operand width | 8 |
-| RESULT_WIDTH | Result width | DATA_WIDTH |
-| ALT_WIDTH | Alternative-selection input width | 4 |
-| ALT_EN | Enable alternative operation logic | 0 |
-| OVERFLOW_EN | Enable overflow/error indication | 0 |
+| `DATA_WIDTH` | Operand width | `8` |
+| `RESULT_WIDTH` | Result width | `DATA_WIDTH` |
+| `ALT_WIDTH` | Alternative-selection input width | `4` |
+| `ALT_EN` | Enable alternative operations | `1` |
+| `OVERFLOW_EN` | Enable arithmetic error indication | `0` |
 
-When ALT_EN is 0, alternative operation logic is excluded
-from the synthesized design.
+The `board_top` module uses `DATA_WIDTH = 4`, `RESULT_WIDTH = 6`, `ALT_WIDTH = 4`, `ALT_EN = 1`, and `OVERFLOW_EN = 1`.
 
-## Board Configuration
+On the board, each operand ranges from **0 to 15**, and the result bus holds unsigned values from **0 to 63**.
 
-The board-level module uses the following parameter values:
+## Board Controls and Displays
 
-| Parameter | Value |
-|-----------|-------|
-| DATA_WIDTH | 4 |
-| RESULT_WIDTH | 6 |
-| ALT_WIDTH | 4 |
-| ALT_EN | 1 |
-| OVERFLOW_EN | 1 |
-
-The operands range from 0 to 15.
-The six-bit result bus represents unsigned values from 0 to 63.
-
-The displays show the value carried by the result bus.
-The overflow LED indicates when an operation produces
-an overflow or a calculation error.
-
-## Board Controls
+The Verilog ports use lowercase names, such as `sw`, `key`, `hex0`, and `ledr0`. The table uses the board's printed signal labels.
 
 | Board signal | Function |
 |--------------|----------|
-| SW[7:4] | Operand A |
-| SW[3:0] | Operand B |
-| SW[9:8] | Operation code |
-| KEY[3:0] | Alternative operation selection inputs |
-| HEX5, HEX4 | Operand A: tens and units |
-| HEX3, HEX2 | Operand B: tens and units |
-| HEX1, HEX0 | Result: tens and units |
-| LEDR0 | Overflow or calculation error indication |
+| `SW[7:4]` | Operand A |
+| `SW[3:0]` | Operand B |
+| `SW[9:8]` | Operation code |
+| `KEY[3:0]` | Alternative-operation selection inputs |
+| `HEX5`, `HEX4` | Operand A: tens and units |
+| `HEX3`, `HEX2` | Operand B: tens and units |
+| `HEX1`, `HEX0` | Result: tens and units |
+| `LEDR0` | Arithmetic error flag |
+
+All four push-buttons are **active-low**: a released button reads `1`, and a pressed button reads `0`.
+
+- **All buttons released:** `alt = 4'b1111`, selecting alternative operations.
+- **Any button pressed:** at least one `alt` bit is `0`, selecting main operations.
+
+Only `LEDR0` is connected by this design; the other LEDs are not top-level outputs.
+
+## Arithmetic Errors and Result Width
+
+When `OVERFLOW_EN = 1`, the `overflow` output indicates:
+
+- A zero divisor for either remainder operation.
+- A multiplication result above the maximum value of `s`.
+- An alternative multiplication result outside the unsigned result range, including a negative result from `a * b - 3`.
+
+The result is **not saturated**. Excess high bits are discarded, and a negative arithmetic result wraps to the output width. The displays show the value stored in `s`.
+
+Examples for the board's six-bit result:
+
+| Operation | Mathematical result | Displayed result | Error flag |
+|-----------|---------------------|------------------|------------|
+| Main: `10 * 10` | `100` | `36` | `1` |
+| Alternative: `10 * 10 - 3` | `97` | `33` | `1` |
+| Alternative: `5 * 13 - 3` | `62` | `62` | `0` |
+| Alternative: `1 * 2 - 3` | `-1` | `63` | `1` |
+
+For a zero divisor, the result is undefined; the error LED should be used to identify this condition. Bitwise operations clear the error flag. When `OVERFLOW_EN = 0`, the flag is always `0`.
+
+### Multiplication Width Fix
+
+The overflow calculation uses `(a + 0) * b` to evaluate the product in a wider expression before comparing it with the result limit. The unsized literal `0` introduces a width of at least 32 bits; it does **not** simply add one extra result bit. This prevents premature truncation for the operand widths used in this lab.
+
+For alternative multiplication, the upper-limit check uses the final expression `(a + 0) * b - 3`. Checking only the product would incorrectly flag `5 * 13 - 3 = 62` as an overflow for a six-bit output. A separate check detects products below `3`, which would produce an unsigned underflow after subtraction.
+
+This width workaround is intended for the lab configurations. Wider parameter values require a review of intermediate arithmetic widths.
 
 ## Decimal Display
 
-Three binary-to-BCD converters process operand A,
-operand B, and the ALU result.
+Three `bin2bcd` instances convert operand A, operand B, and the result into two BCD digits each. They use input widths of 4, 4, and 6 bits respectively.
 
-Each converter produces two decimal digits:
-tens and units. Six BCD-to-seven-segment decoders
-drive the corresponding displays.
+Double Dabble processes the binary input from its most significant bit. Before each one-bit left shift, it adds `3` to each BCD digit that is at least `5`, then inserts the next input bit.
 
-The Double Dabble algorithm converts binary values into BCD
-using conditional addition of 3 and one-bit left shifts.
+The eight-bit BCD output contains two four-bit decimal digits: tens in `[7:4]` and units in `[3:0]`. Six `bcd2sev` instances convert these digits into active-low seven-segment patterns. Each display output uses the bit order `{g, f, e, d, c, b, a}`.
+
+Two BCD digits represent values from 0 to 99, which covers both operands and the six-bit result used here.
+
+## Project Files
+
+| File | Purpose |
+|------|---------|
+| `lab2.v` | Parameterized combinational ALU |
+| `board_top.v` | Board integration and display connections; FPGA top-level module |
+| `bin2bcd.v` | Binary-to-BCD converter |
+| `bcd2sev.v` | BCD-to-seven-segment decoder |
+| `test.v` | ALU stimulus testbench |
+| `lab2.qpf` | Quartus project |
+| `lab2.qsf` | Project settings and board pin assignments |
+| `top.v` | Earlier laboratory wrapper; unused by `board_top` |
 
 ## Simulation
 
-The testbench generates random values for operands A and B
-and cycles through operation codes 00, 01, 10, and 11.
+The `test` module instantiates the ALU with eight-bit operands and results, enables alternative operations and error indication, and generates five random operand pairs.
 
-Operands change once every four operation intervals,
-allowing all four operations to be observed for each operand pair.
+For each pair it tests all four main operations, followed by all four alternative operations. The operation interval is **2 ns**; each operand pair remains unchanged for **16 ns**. The complete stimulus sequence takes **80 ns**.
 
-The simulation configuration enables both alternative operations
-and overflow/error indication. Other ALU parameters use their defaults.
+`test.v` provides stimulus for waveform inspection and does not contain automatic result assertions.
 
-Waveforms are used to inspect all inputs and outputs.
-This testbench provides stimulus for waveform inspection;
-it should not be described as self-checking unless automatic
-result comparisons are added.
+Run these commands in the ModelSim console from the project directory:
 
-## FPGA Resource Comparison
+```tcl
+vlib work
+vlog lab2.v test.v
+vsim work.test
+add wave -r sim:/test/*
+run -all
+```
 
-The laboratory includes a comparison of FPGA resource usage
-for operand widths of 4, 8, and 16 bits.
+Alternatively, run the stimulus with Icarus Verilog:
 
-Each width is evaluated using three configurations:
+```sh
+iverilog -g2001 -s test -o test.vvp lab2.v test.v
+vvp test.vvp
+```
 
-| ALT_EN | OVERFLOW_EN |
-|--------|-------------|
-| 0 | 0 |
-| 1 | 0 |
-| 1 | 1 |
+This Icarus command checks compilation and execution; the supplied testbench does not print results or write a waveform file.
 
-The comparison records:
+### Final RTL Review
 
-- Total pins
-- Logic utilization in ALMs
-- Total registers
-- Total DSP blocks
+Separate automated checks of the updated RTL passed in Icarus Verilog:
 
-Measured results can be added to the docs directory.
+- **16,384 board configurations:** all four-bit operand pairs, four operation codes, and all 16 button patterns. Checks covered the result, error flag, and six display outputs.
+- **524,288 ALU configurations:** all eight-bit operand pairs, four operation codes, and both operation sets, with error indication enabled.
+
+For zero divisors, these checks verified the error flag without requiring a defined remainder result. These review checks are separate from the random stimulus in `test.v`.
 
 ## Building and Programming
 
-1. Open the Quartus project file.
-2. Select the 5CSEMA5F31C6 FPGA device.
-3. Set board_top as the top-level entity.
-4. Check that all Verilog source files are included.
-5. Check the DE1-SoC pin assignments.
-6. Run a full compilation.
-7. Connect the board and open Quartus Programmer.
-8. Select the generated .sof file and program the FPGA.
+1. Open `lab2.qpf` in Quartus Prime.
+2. Confirm the FPGA device is `5CSEMA5F31C6` and the top-level entity is `board_top`.
+3. Include `lab2.v`, `board_top.v`, `bin2bcd.v`, and `bcd2sev.v` in the board build.
+4. Check the pin assignments in `lab2.qsf`. Signal names are case-sensitive and must match the top-level ports.
+5. Run a full compilation.
+6. Connect the board by USB and open **Tools → Programmer**.
+7. Select the USB-Blaster hardware and add the generated `output_files/lab2.sof` file to the FPGA device.
+8. Enable **Program/Configure** and click **Start**.
 
-Pin assignments must match the exact top-level port names,
-including capitalization.
+Recompile after changing the RTL to ensure the programmed `.sof` corresponds to the current source files.
 
-## Hardware Verification
+## Hardware Demonstration
 
-Hardware verification is pending.
-
-The laboratory requires at least 15 input combinations,
-recording:
-
-- Operand A
-- Operand B
-- Operation code
-- Alternative operation selection
-- Displayed result
-- Overflow/error flag
-
-## Documentation
-
-Supporting materials may include:
-
-- ALU operation table
-- RTL diagrams with optional features disabled and enabled
-- Top-level RTL diagram
-- Simulation waveforms
-- FPGA resource comparison
-- Hardware test results (in the process)
-- A photo or short video of the running design (in the process)
+The design has been run on a DE1-SoC board, and a demonstration video has been recorded. The video will be added separately.
 
 ## What I Learned
 
-- Describing combinational logic in Verilog
-- Using parameters and reduction operators
-- Handling arithmetic widths and calculation errors
-- Writing a simulation testbench
-- Implementing Double Dabble conversion
-- Connecting modules through ports and internal wires
-- Assigning FPGA pins
-- Comparing synthesized hardware resources
+- Describing combinational logic and connecting Verilog modules
+- Using parameters, bitwise operators, and reduction operators
+- Handling result truncation, overflow, and unsigned underflow
+- Writing simulation stimulus and inspecting waveforms
+- Implementing Double Dabble and seven-segment decoding
+- Assigning FPGA pins and programming the DE1-SoC board
+- Comparing synthesized resource usage for different ALU configurations

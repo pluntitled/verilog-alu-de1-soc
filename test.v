@@ -1,12 +1,16 @@
 `timescale 1ns/1ps
 module test;
 
-reg [7:0] a, b, alt;
+reg [7:0] a, b;
+reg [3:0] alt;
 reg [1:0] op;
 wire [7:0] s; 
-reg overflow;
+wire overflow;
 
-lab2 dut(
+lab2 #(
+	.ALT_EN(1),
+	.OVERFLOW_EN(1)
+) dut (
 	.a(a),
 	.b(b),
 	.alt(alt),
@@ -21,7 +25,7 @@ initial begin
 	repeat(5) begin
 		a = $random;
 		b = $random;
-		alt = 1'b0;
+		alt = 4'b0000;
 		op = 2'b00;
 		#2;
 		op = 2'b01;
@@ -31,7 +35,7 @@ initial begin
 		op = 2'b11;
 		#2;
 		
-		alt = 1'b1;
+		alt = 4'b1111;
 		op = 2'b00;
 		#2;
 		op = 2'b01;

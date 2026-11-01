@@ -10,9 +10,9 @@ module lab2
 	input [DATA_WIDTH-1:0] a,
 	input [DATA_WIDTH-1:0] b,
 	input [1:0] op,
-	input [DATA_WIDTH-1:0]alt,
+	input [ALT_WIDTH-1:0]alt,
 	output reg [RESULT_WIDTH-1:0] s,
-	output reg [RESULT_WIDTH-1:0] overflow
+	output reg overflow
 );
 
 always @(*) begin
@@ -37,7 +37,7 @@ always @(*) begin
 		if (ALT_EN && &alt) begin
 			case(op)
 				2'b00 : overflow = (b == 0);
-				2'b01 : overflow = (((a * b) > {RESULT_WIDTH{1'b1}}) || ((a * b) < 3));
+				2'b01 : overflow = ((((a + 0) * b - 3) > {RESULT_WIDTH{1'b1}}) || (((a + 0) * b) < 3));
 				2'b10 : overflow = 0;
 				2'b11 : overflow = 0;
 			endcase
@@ -45,7 +45,7 @@ always @(*) begin
 		else
 			case(op)
 				2'b00 : overflow = (b == 0);
-				2'b01 : overflow = ((a * b) > {RESULT_WIDTH{1'b1}});
+				2'b01 : overflow = (((a + 0) * b) > {RESULT_WIDTH{1'b1}});
 				2'b10 : overflow = 0;
 				2'b11 : overflow = 0;
 			endcase
