@@ -1,29 +1,32 @@
-# Quartus generated directories
+# Quartus generated files
 db/
 incremental_db/
 output_files/
-
-# Quartus local settings
+greybox_tmp/
 *.qws
+*.sft
+*_nativelink_simulation.rpt
+c5_pin_model_dump.txt
 
 # ModelSim generated files
 work/
+rtl_work/
+modelsim.ini
 transcript
+msim_transcript
 *.wlf
+*_modelsim.xrf
 
-# Simulation waveforms
+# Generated simulation outputs
 *.vcd
 *.vvp
+
+# Backup and temporary files
+*.bak
+*.bak[0-9]*
+*.tmp
+*~
 
 # Operating system files
 .DS_Store
 Thumbs.db
-
-# Additional simulation-generated files
-rtl_work/
-msim_transcript
-modelsim.ini
-*.bak
-*.bak[0-9]*
-*.sft
-*_modelsim.xrf
